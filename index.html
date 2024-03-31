@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherNow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <style>
+        /* Custom styles */
+        body {
+            background-image: url('https://source.unsplash.com/1600x900/?weather');
+            background-size: cover;
+            background-repeat: no-repeat;
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+        }
+
+        .weather-map {
+            width: 100%;
+            height: 400px; /* Adjust height as needed */
+            margin-top: 20px;
+        }
+
+        .inputs {
+            margin-bottom: 20px;
+        }
+
+        .weather-component {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        /* Top right corner */
+        .top-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        /* Weather of current location display */
+        .current-location-weather {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        /* Weather icon */
+        .weather-icon {
+            width: 50px;
+            height: 50px;
+        }
+    </style>
+</head>
+<body class="bg-gray-200">
+    <div class="container mx-auto py-8">
+        <h1 class="text-3xl font-bold mb-4 text-white">Weather Viewer</h1>
+        <!-- Input section -->
+        <div class="inputs">
+            <input type="text" placeholder="Enter location (city, zip code, country)" id="locationInput" class="px-4 py-2 border rounded">
+            <button id="searchButton" class="px-4 py-2 bg-blue-500 text-white rounded">Search</button>
+        </div>
+
+        <!-- Weather display section -->
+        <div id="weatherDisplay" class="border p-4 rounded hidden">
+            <h2 class="text-xl font-bold" id="cityoutput"></h2>
+            <img src="" alt="Weather Icon" id="weatherIcon" class="weather-icon">
+            <p id="description"></p>
+            <p id="temperature"></p>
+            <p id="humidity"></p>
+            <p id="windSpeed"></p>
+        </div>
+
+        <!-- Weather map -->
+        <iframe id="weatherMap" class="weather-map" src="" frameborder="0"></iframe>
+
+        <!-- Additional Weather Components -->
+        <div class="weather-component">
+            <h2 class="text-xl font-bold text-white">7-Day Forecast</h2>
+            <!-- Add forecast information here -->
+            <p>Forecast information goes here...</p>
+        </div>
+
+        <div class="weather-component">
+            <h2 class="text-xl font-bold text-white">Weather Radar</h2>
+            <!-- Add weather radar component here -->
+            <p>Radar component goes here...</p>
+        </div>
+
+        <div class="weather-component">
+            <h2 class="text-xl font-bold text-white">Additional Weather Data</h2>
+            <!-- Add additional weather data component here -->
+            <p>Additional weather data goes here...</p>
+        </div>
+
+        <!-- Weather of current location display -->
+        <div class="top-right">
+            <div id="currentLocationWeather" class="current-location-weather">
+                <!-- Current location weather will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('weatherForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const location = document.getElementById('locationInput').value;
+            fetchWeatherData(location);
+            // Disable the submit button to restrict further access
+            document.getElementById('searchButton').disabled = true;
+        });
+
+        // Function to fetch weather data by location
+        function fetchWeatherData(location) {
+            const apiKey = "8cd409f54b867eedb3778b9e7e520981"; // Replace with your OpenWeatherMap API key
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${apiKey}&units=metric`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateWeatherData(data);
+                })
+                .catch(error => {
+                    console.log('Error fetching the weather data: ', error);
+                    // Optionally, inform the user that an error occurred.
+                });
+        }
+
+        function updateWeatherData(weatherData) {
+            const weatherDisplay = document.getElementById('weatherDisplay');
+            weatherDisplay.classList.remove('hidden');
+            weatherDisplay.querySelector('#cityoutput').textContent = `${weatherData.name}, ${weatherData.sys.country}`;
+            weatherDisplay.querySelector('#description').textContent = `Weather: ${weatherData.weather[0].main}`;
+            weatherDisplay.querySelector('#temperature').textContent = `Temperature: ${weatherData.main.temp}°C`;
+            weatherDisplay.querySelector('#humidity').textContent = `Humidity: ${weatherData.main.humidity}%`;
+            weatherDisplay.querySelector('#windSpeed').textContent = `Wind Speed: ${weatherData.wind.speed} m/s`;
+            const weatherIcon = weatherData.weather[0].icon;
+            const iconUrl = `https://openweathermap.org/img/wn/${weatherIcon}.png`;
+            document.getElementById('weatherIcon').src = iconUrl;
+
+            // Display the weather map using latitude and longitude
+            const latitude = weatherData.coord.lat;
+            const longitude = weatherData.coord.lon;
+            const mapUrl = `https://openweathermap.org/weathermap?basemap=map&cities=false&layer=temperature&lat=${latitude}&lon=${longitude}&zoom=3`;
+            document.getElementById('weatherMap').src = mapUrl;
+        }
+
+        // Function to get current location and fetch weather
+        function getCurrentLocationWeather() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    fetchWeatherDataByCoords(latitude, longitude);
+                });
+            } else {
+                console.log("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Function to fetch weather data by coordinates
+        function fetchWeatherDataByCoords(latitude, longitude) {
+            const apiKey = "12d3ecc7ad93aeaf3dd516b186b8ff43"; // Replace with your OpenWeatherMap API key
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateCurrentLocationWeather(data);
+                })
+                .catch(error => {
+                    console.log('Error fetching the weather data: ', error);
+                    // Optionally, inform the user that an error occurred.
+                });
+        }
+
+        // Function to update weather of current location
+        function updateCurrentLocationWeather(weatherData) {
+            const currentLocationWeather = document.getElementById('currentLocationWeather');
+            currentLocationWeather.innerHTML = `
+                        <p>Current Location: ${weatherData.name}, ${weatherData.sys.country}</p>
+                        <p>Temperature: ${weatherData.main.temp}°C</p>
+                        <p>Weather: ${weatherData.weather[0].main}</p>
+                        <p>Humidity: ${weatherData.main.humidity}%</p>
+                        <p>Wind Speed: ${weatherData.wind.speed} m/s</p>
+                    `;
+        }
+
+        // Fetch weather of current location when the page loads
+        getCurrentLocationWeather();
+    </script>
+</body>
+</html>
